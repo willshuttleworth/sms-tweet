@@ -1,4 +1,3 @@
 *.txt
-*.md
-!README.md
+!requirements.txt
 tweet.py
