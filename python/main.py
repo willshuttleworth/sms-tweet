@@ -12,10 +12,11 @@ import pkce
 import requests
 import base64
 import json
+import sqlite3
 
 app = FastAPI()
 
-@app.on_event("startup")
+@app.on_event('startup')
 def on_startup():
     f = open('python/creds.txt').readlines()
     global cid, secret
@@ -28,6 +29,27 @@ def on_startup():
     global global_state
     global_state = {}
 
+    # db setup
+    global con, cur
+    con = sqlite3.connect('sms-tweet.db')
+    cur = con.cursor()
+    res = cur.execute("SELECT name FROM sqlite_master WHERE name='users'")
+    # users table does not currently exist, set it up
+    if res.fetchone() is None:
+        query = """
+            CREATE TABLE users (
+                phone TEXT PRIMARY KEY NOT NULL,
+                bearer TEXT NOT NULL,
+                bearerExpiration TIMESTAMP NOT NULL,
+                refresh TEXT NOT NULL,
+                refreshExpiration TIMESTAMP NOT NULL
+        );
+        """
+        cur.execute(query)
+
+@app.on_event('shutdown')
+def on_shutdown():
+    con.close()
 
 @app.get('/', response_class=HTMLResponse)
 async def root():
@@ -51,9 +73,19 @@ async def auth(phone: str | None = None):
             <p>no phone number provided for auth</p>
         </body>
         '''
-    # TODO: query for existence of phone number in db
-    #   if exists, return page saying phone number already in use
-    #   else, return page with link to twitter oauth
+    query = 'SELECT * FROM users WHERE phone = ?'
+    res = cur.execute(query, [phone])
+    # phone number already in use
+    # TODO: change phone formatting after twilio integration
+    if res.fetchall() != []:
+        return f'''
+        <head>
+            <title>tweet via sms</title>
+        </head>
+        <body>
+            <p>phone number ({phone[0:3]}) {phone[3:6]}-{phone[6:]} already in use</p>
+        </body>
+        '''
 
     endpoint = 'https://twitter.com/i/oauth2/authorize'
 
@@ -83,7 +115,6 @@ async def auth(phone: str | None = None):
     </body>
     '''
 
-# how does server know what user (phone number) just authenticated?
 @app.get('/new', response_class=HTMLResponse)
 async def new(state: str, code: str | None = None, error: str | None = None):
     if error == 'access_denied':
@@ -95,7 +126,7 @@ async def new(state: str, code: str | None = None, error: str | None = None):
 
     url = 'https://api.twitter.com/2/oauth2/token'
     auth = f'{cid}:{secret}'
-    encoded = base64.b64encode(auth.encode("utf-8")).decode("utf-8")
+    encoded = base64.b64encode(auth.encode('utf-8')).decode('utf-8')
     headers = {
         'Content-Type': 'application/x-www-form-urlencoded',
         'Authorization': f'Basic {encoded}',
@@ -111,10 +142,19 @@ async def new(state: str, code: str | None = None, error: str | None = None):
     print(response.headers)
     print(response.text) 
     if response.status_code == 200:
-        # TODO: write bearer, refresh tokens to db
+        phone = global_state[state][0] 
         r = json.loads(response.text)
         bearer = r['access_token']
         refresh = r['refresh_token']
-        # INSERT into USERS VALUES (phone, bearer, bearer_expiration, refresh, refresh expiration)
-        # bearer expiration is now plus 2 hours, refresh expiration is now plus 6 months
+
+        # delete any existing user with specified phone number
+        query = 'DELETE FROM users WHERE phone = ?'
+        cur.execute(query, [phone])
+        # insert new user
+        query = "INSERT INTO users VALUES (?, ?, DATETIME(CURRENT_TIMESTAMP, '+2 hours'), ?, DATETIME(CURRENT_TIMESTAMP, '+6 months'))"
+        cur.execute(query, [phone, bearer, refresh])
+        con.commit()
+        res = cur.execute("SELECT * FROM users")
+        for s in res.fetchall():
+            print(s)
         return '<p>successfully authenticated</p>'

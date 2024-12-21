@@ -1,31 +1,27 @@
-# 2 sides: client to sms server, server to twitter api
-
-#### architecture: self hosted on raspberry pi, both sms gateway and tweet server
+# planning
 
 ### sms
 
-server knows which phone number each request is coming from, that serves as auth (for my service)
+sms flow (2 cases)
+1. returning user: tweet whatever they message
+    - respond with confirmation, '<tweet>' has been succesfully tweeted
+    - respond with error message
+        - issue with tweet sending (not auth related)
+        - issue with auth (refresh token no longer valid)
+            - catch this case, treat as new user and have them reauthenticate with twitter (keep db in valid state, do not incorrectly update/insert new creds) 
+2. new user
+    - regardless of what their first message is, send them auth link in form of `https://<domain.xyz>/auth/?phone=<phone_number>`
+    - success: message that auth is successful, any subsequent messages will be tweeted
+    - failure: auth failed, message again to try again
 
-if server has not seen phone number before
-- request oauth creds
-- ux? type creds via text (simplest) vs some web ui (hosting? less friction but more complex)
-- once creds are received, tell user that they are ready to tweet 
-
-phone number recognized
-- read incoming request, map the phone number to the stored oauth creds
-- run tweet python code
+special commands
+- escape sequences to allow user actions once authenticated (\STOP, invalidate auth tokens, delete user from db)
 
 #### twilio
 
 offload sms server
 - cost: number is $2/month, each message is $0.008
 - **much more affordable and simple than self hosted gateway**
-
-#### sms gateway
-
-[self hosted sms gateway](https://blog.haschek.at/2021/raspberry-pi-sms-gateway.html)
-- need cheap sim and sim dongle for pi (cost?)
-- does this guide work with 4g?
 
 ### api
 
@@ -59,4 +55,30 @@ auth cases:
 
 [twitter docs example](https://github.com/xdevplatform/Twitter-API-v2-sample-code/blob/main/Manage-Tweets/create_tweet.py)
 - tweeting images or link previews? special ways to handle this over sms?
+
+### sqlite
+
+schema: phone (primary key), bearer token, bearer expiration, refresh token, refresh expiration
+
+operations
+- userExists: is there a record for a specific phone number?
+    - called whenever a user messages
+- bearerValid
+    - called when attempting to tweet
+- refreshValid
+    - called when attempting to tweet **and** bearer token is expired
+- addCreds: add newly acquired bearer and refresh tokens to db
+    - delete old record (to confirm that primary key constraint wont be violated and only one set of tokens will exist for a given user)
+    - insert new record
+
+### docker
+
+networking
+- keep using port 80? 
+-how to point fastapi to the actual network interface and not localhost?
+
+volume mounts
+- persist db file across container lifetimes
+
+
 
