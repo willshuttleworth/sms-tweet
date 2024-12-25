@@ -53,8 +53,20 @@ auth cases:
 
 ##### tweeting
 
+character limit: check length of tweet before attempting to send to twitter api
+- does sms have a limit that will effect this too or no? 
+    - i assume an sms message has a limit but twilio will handle messages over that limit by splitting and reconstructing
+- return which part of message was within limit
+
+threads
+- special command to start thread, each subsequent message is treated as a part of the thread until an ending command is sent
+    - check if each tweet in thread is within character limit
+- does twitter api have a way of handling/creating threads?
+    
+
 [twitter docs example](https://github.com/xdevplatform/Twitter-API-v2-sample-code/blob/main/Manage-Tweets/create_tweet.py)
 - tweeting images or link previews? special ways to handle this over sms?
+
 
 ### sqlite
 
@@ -81,4 +93,12 @@ volume mounts
 - persist db file across container lifetimes
 
 
+### tech debt
 
+- split main.py into multiple files 
+    - tweeting, auth, sms, server config can be in separate files
+- move all html into templates
+- move common operations into functions (especially db)
+    - function for inserting new user, printing db state, selecting bearer token given phone
+- load testing, scaling, reverse proxy for sms vs auth
+- encrypt db
