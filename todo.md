@@ -17,6 +17,9 @@ sms flow (2 cases)
 special commands
 - escape sequences to allow user actions once authenticated (\STOP, invalidate auth tokens, delete user from db)
 
+handling invalid phone numbers
+- if user navigates to /auth and passes an invalid phone number, how to failure when trying to message invalid number?
+
 #### twilio
 
 offload sms server

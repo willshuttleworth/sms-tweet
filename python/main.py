@@ -59,7 +59,7 @@ async def root():
         <title>tweet via sms</title>
     </head>
     <body>
-        <p>Reviving Twitter via SMS. <br><br>Text 'tweet' to +1 (855) 926-0117 to start.</p>
+        <p>Reviving Twitter via SMS. <br><br>Text 'tweet' to (218) 319-7248 to start.</p>
     </body>
     '''
 
@@ -101,6 +101,7 @@ async def auth(phone: str | None = None):
     </head>
     <body>
         <a href={url}>authenticate with twitter</a>
+        <p>by authenticating with twitter, you opt in to receiving messages from smstweet. </p>
     </body>
     '''
 
