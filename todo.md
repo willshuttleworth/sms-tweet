@@ -10,7 +10,7 @@ sms flow (2 cases)
         - issue with auth (refresh token no longer valid)
             - catch this case, treat as new user and have them reauthenticate with twitter (keep db in valid state, do not incorrectly update/insert new creds) 
 2. new user
-    - regardless of what their first message is, send them auth link in form of `https://<domain.xyz>/auth/?phone=<phone_number>`
+    - regardless of what their first message is, send them auth link in form of `https://smstweet.org/auth/?phone=<phone_number>`
     - success: message that auth is successful, any subsequent messages will be tweeted
     - failure: auth failed, message again to try again
 
@@ -19,6 +19,8 @@ special commands
 
 handling invalid phone numbers
 - if user navigates to /auth and passes an invalid phone number, how to failure when trying to message invalid number?
+- requests to this endpoint should be limited to those coming from sms referrals
+    - generate code and add to auth url: check if this code 
 
 #### twilio
 
@@ -103,5 +105,10 @@ volume mounts
 - move all html into templates
 - move common operations into functions (especially db)
     - function for inserting new user, printing db state, selecting bearer token given phone
+
+### optimization
+
+- reverse proxy: throw out /wordpress and /wp-admin requests (and other spam/attack requests)
 - load testing, scaling, reverse proxy for sms vs auth
-- encrypt db
+
+

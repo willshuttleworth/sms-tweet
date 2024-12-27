@@ -5,7 +5,7 @@
 # TODO: change all html to templates
 
 from fastapi import FastAPI, Form
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse, Response, PlainTextResponse
 from twilio.twiml.messaging_response import MessagingResponse
 from datetime import datetime
 import secrets
@@ -63,6 +63,17 @@ async def root():
     </body>
     '''
 
+@app.get('/terms', response_class=HTMLResponse)
+async def terms():
+    terms_file = open('templates/terms.html')
+    return terms_file.read()
+
+@app.get('/privacy', response_class=HTMLResponse)
+async def privacy():
+    privacy_file = open('templates/privacy.html')
+    return privacy_file.read()
+    
+
 @app.get('/auth', response_class=HTMLResponse)
 async def auth(phone: str | None = None):
     if phone is None:
@@ -101,7 +112,8 @@ async def auth(phone: str | None = None):
     </head>
     <body>
         <a href={url}>authenticate with twitter</a>
-        <p>by authenticating with twitter, you opt in to receiving messages from smstweet. </p>
+        <p>by authenticating with twitter, you opt in to receiving messages from smstweet</p>
+        <p>click <a href='https://smstweet.org/terms'>here</a> to read the terms and conditions of smstweet</p>
     </body>
     '''
 
