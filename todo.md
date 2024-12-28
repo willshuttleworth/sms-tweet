@@ -15,12 +15,17 @@ sms flow (2 cases)
     - failure: auth failed, message again to try again
 
 special commands
-- escape sequences to allow user actions once authenticated (\STOP, invalidate auth tokens, delete user from db)
+- escape sequences to allow user actions once authenticated (STOP, invalidate auth tokens, delete user from db)
 
 handling invalid phone numbers
 - if user navigates to /auth and passes an invalid phone number, how to failure when trying to message invalid number?
 - requests to this endpoint should be limited to those coming from sms referrals
     - generate code and add to auth url: check if this code 
+
+links in sms messages
+- does link need `https://` in the beginning?
+    - `https://smstweet.org/auth?phone=<phone>`
+    - `smstweet.org/auth?phone=<phone>`
 
 #### twilio
 
@@ -77,17 +82,6 @@ threads
 
 schema: phone (primary key), bearer token, bearer expiration, refresh token, refresh expiration
 
-operations
-- userExists: is there a record for a specific phone number?
-    - called whenever a user messages
-- bearerValid
-    - called when attempting to tweet
-- refreshValid
-    - called when attempting to tweet **and** bearer token is expired
-- addCreds: add newly acquired bearer and refresh tokens to db
-    - delete old record (to confirm that primary key constraint wont be violated and only one set of tokens will exist for a given user)
-    - insert new record
-
 ### docker
 
 networking
@@ -97,14 +91,17 @@ networking
 volume mounts
 - persist db file across container lifetimes
 
-
 ### tech debt
 
 - split main.py into multiple files 
     - tweeting, auth, sms, server config can be in separate files
 - move all html into templates
 - move common operations into functions (especially db)
-    - function for inserting new user, printing db state, selecting bearer token given phone
+    - insert new record
+    - delete record with given phone number
+    - select based on phone
+    - print db state
+- handle proxy myself, stop using cloudflare
 
 ### optimization
 
