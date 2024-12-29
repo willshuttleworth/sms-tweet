@@ -1,5 +1,10 @@
 # planning
 
+## usage
+
+* build: `docker build -t smstweet .`
+* run: `docker run --rm -it -p 80:80 -v ./smstweet.db:/code/smstweet.db smstweet`
+
 ### sms
 
 sms flow (2 cases)
@@ -101,6 +106,9 @@ volume mounts
     - delete record with given phone number
     - select based on phone
     - print db state
+- move api operations into separate file
+    - auth
+    - tweeting
 - handle proxy myself, stop using cloudflare
 
 ### optimization
