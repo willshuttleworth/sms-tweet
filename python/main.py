@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse, Response, PlainTextResponse
 from twilio.twiml.messaging_response import MessagingResponse
+from twilio.Rest import Client
 from datetime import datetime
 import secrets
 import pkce
@@ -15,9 +16,15 @@ app = FastAPI()
 @app.on_event('startup')
 def on_startup():
     f = open('python/creds.txt').readlines()
-    global cid, secret
+    global cid, secret, sid, token
+    # twitter creds
     cid = f[0].strip()
     secret = f[1].strip()
+    # twilio creds
+    sid = f[2].strip()
+    token = f[3].strip()
+    global client
+    client = Client(sid, token)
 
     global code_verifier, code
     code_verifier, code = pkce.generate_pkce_pair()
@@ -142,15 +149,36 @@ async def new(state: str, code: str | None = None, error: str | None = None):
         delete(phone)
         insert(phone, bearer, refresh)
         print_db()
-        # TODO: send message with usage instructions to new user
-        return '<p>successfully authenticated</p>'
+        msg = '''
+            You have successfully authenticated with Twitter, and also opted in to receiving messages from smstweet. 
+            Messages from smstweet will only be sent as replies to your own messages, such as replying with success or failure of an attempted tweet. 
+            Messages will never be promotional. For help, email willshuttle21@gmail.com. To opt out from these messages, please message 'STOP'. Message and data rates may apply.
+        '''
+        try:
+            # TODO: uncomment below once number is approved
+            '''
+            message = client.messages.create(
+                body=msg,
+                from_='+12183197248'
+                to=phone='+' + phone
+            )
+            print(f'auth confirmation sent to {phone}')
+            '''
+            return '<p>successfully authenticated</p>'
+        except Exception as e:
+            print(f'failed to send auth confirmation to {phone}: {e}')
 
 @app.post('/sms', response_class=Response)
 async def sms(Body: str = Form(...), From: str = Form(...)):
-    # TODO: check that sms message is less than 280 characters
-    #   how to check if account is verified and send longer tweets?
+    # TODO: change webhook to prod value in twilio console
+    #   https://smstweet.org/sms
+    # TODO: uncomment all replies
     phone = From[1:]
     response = MessagingResponse()
+    if len(body) > 280:
+        response.message(f'Your message exceeds the Twitter character limit. \'{Body[280:]}\' exceeds the limit')
+        # return Response(content=str(response), media_type="application/xml")
+
     # STOP message, delete user and their keys from db
     if Body == 'STOP':
         # remove user and their tokens from db
