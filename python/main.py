@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Form
 from fastapi.responses import HTMLResponse, Response, PlainTextResponse
 from twilio.twiml.messaging_response import MessagingResponse
-from twilio.Rest import Client
+# from twilio.Rest import Client
 from datetime import datetime
 import secrets
 import pkce
@@ -23,8 +23,8 @@ def on_startup():
     # twilio creds
     sid = f[2].strip()
     token = f[3].strip()
-    global client
-    client = Client(sid, token)
+    # global client
+    # client = Client(sid, token)
 
     global code_verifier, code
     code_verifier, code = pkce.generate_pkce_pair()
